@@ -1,0 +1,224 @@
+{
+    "1": {
+        "topic": "Transformer architectures",
+        "completed_courses": [
+            "CS253",
+            "CS231"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "2": {
+        "topic": "AI tool calling and agent orchestration",
+        "completed_courses": [
+            "CS259",
+            "CS269"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "3": {
+        "completed_courses": [
+            "CS233",
+            "CS202"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "4": {
+        "topic": "Search Engine Architecture",
+        "completed_courses": [
+            "CS281"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "5": {
+        "topic": "Knowledge Graphs",
+        "completed_courses": [
+            "CS258",
+            "CS229"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "6": {
+        "topic": "Graph Neural Networks",
+        "completed_courses": [
+            "CS231"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "7": {
+        "topic": "Fine-tuning pretrained neural models",
+        "completed_courses": [
+            "CS252",
+            "CS231"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "8": {
+        "topic": "AI Evaluation and Benchmarking",
+        "completed_courses": [
+            "CS267",
+            "CS254"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "9": {
+        "topic": "adversarial attacks against machine-learning models",
+        "completed_courses": [
+            "CS270",
+            "CS252"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "10": {
+        "topic": "Secure AI Applications",
+        "completed_courses": [
+            "CS270",
+            "CS255"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "11": {
+        "topic": "AI and Software Requirements Engineering",
+        "completed_courses": [
+            "SE217",
+            "CS254"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "12": {
+        "topic": "Detecting conflicts and inconsistencies between software requirements",
+        "completed_courses": [
+            "SE217",
+            "SE218"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "13": {
+        "topic": "Requirements Elicitation Techniques",
+        "completed_courses": [
+            "SE216"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "14": {
+        "topic": "cloud-native application architecture",
+        "completed_courses": [
+            "IT211",
+            "CS222"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "15": {
+        "topic": "statistical learning",
+        "completed_courses": [
+            "STAT210",
+            "MATH209"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "16": {
+        "topic": "Deep Learning for Data Analysis",
+        "completed_courses": [
+            "STAT210"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "17": {
+        "topic": "advanced optimization",
+        "completed_courses": [
+            "MATH209",
+            "MATH204"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "18": {
+        "topic": "computational methods for large linear algebra problems",
+        "completed_courses": [
+            "MATH207",
+            "MATH105"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "19": {
+        "topic": "AI Evaluation and Benchmarking",
+        "completed_courses": [
+            "CS267",
+            "CS254"
+        ],
+        "current_courses": [],
+        "unavailable_days": [
+            "Mon",
+            "Wed"
+        ],
+        "unavailable_time": {
+            "start": "15:00",
+            "end": "16:30"
+        },
+        "available_days": [],
+        "graduating_soon": false
+    },
+    "20": {
+        "topic": "Software Engineering Project",
+        "completed_courses": [
+            "SE401",
+            "SE225"
+        ],
+        "current_courses": [],
+        "unavailable_days": [],
+        "available_days": [],
+        "graduating_soon": false
+    }
+}

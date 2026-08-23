@@ -1,0 +1,3 @@
+"""
+Course Advisor source package.
+"""

@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "nl_query": "I have completed CS253 and CS231. I want to take a course about Transformer architectures. Which course should I register for?",
+    "should_recommend": ["CS285"],
+    "should_not_recommend": ["CS286"]
+  },
+  {
+    "id": 2,
+    "nl_query": "I want to study AI tool calling and agent orchestration. I have already completed CS259 and CS269. What course is appropriate?",
+    "should_recommend": ["CS288"],
+    "should_not_recommend": ["CS287"]
+  },
+  {
+    "id": 3,
+    "nl_query": "I want to take Advanced Information Retrieval, and I have completed CS233 and CS202. Is CS281 a valid choice?",
+    "should_recommend": ["CS281"],
+    "should_not_recommend": ["CS282"]
+  },
+  {
+    "id": 4,
+    "nl_query": "I have completed CS281 but not CS229. I am interested in Search Engine Architecture. Can I take the course now?",
+    "should_recommend": [],
+    "should_not_recommend": ["CS282"]
+  },
+  {
+    "id": 5,
+    "nl_query": "I have completed CS258 and CS229 and want to study Knowledge Graphs. Which course should I choose?",
+    "should_recommend": ["CS283"],
+    "should_not_recommend": ["CS284"]
+  },
+  {
+    "id": 6,
+    "nl_query": "I am interested in Graph Neural Networks. I have completed CS231 but I have not completed CS242. Should I register for the course?",
+    "should_recommend": [],
+    "should_not_recommend": ["CS284"]
+  },
+  {
+    "id": 7,
+    "nl_query": "I want a course focused on fine-tuning pretrained neural models. I have completed CS252 and CS231.",
+    "should_recommend": ["CS286"],
+    "should_not_recommend": ["CS285"]
+  },
+  {
+    "id": 8,
+    "nl_query": "I want to take AI Evaluation and Benchmarking. I have completed CS267 and CS254. Which course fits my request?",
+    "should_recommend": ["CS289"],
+    "should_not_recommend": ["CS290"]
+  },
+  {
+    "id": 9,
+    "nl_query": "I have completed CS270 and CS252 and want to study adversarial attacks against machine-learning models. What should I take?",
+    "should_recommend": ["CS290"],
+    "should_not_recommend": ["CS291"]
+  },
+  {
+    "id": 10,
+    "nl_query": "I want Secure AI Applications and I have completed CS270 and CS255. Is CS291 eligible for me?",
+    "should_recommend": ["CS291"],
+    "should_not_recommend": ["CS292"]
+  },
+  {
+    "id": 11,
+    "nl_query": "I have completed SE217 and CS254 and want to study how AI can be applied to software requirements engineering. Which course should I take?",
+    "should_recommend": ["SE231"],
+    "should_not_recommend": ["SE232"]
+  },
+  {
+    "id": 12,
+    "nl_query": "I have completed SE217 and SE218 and want a course specifically about detecting conflicts and inconsistencies between software requirements.",
+    "should_recommend": ["SE233"],
+    "should_not_recommend": ["SE234"]
+  },
+  {
+    "id": 13,
+    "nl_query": "I want to study Requirements Elicitation Techniques. I have completed SE216. Which course should I register for?",
+    "should_recommend": ["SE234"],
+    "should_not_recommend": ["SE235"]
+  },
+  {
+    "id": 14,
+    "nl_query": "I have completed IT211 and CS222. I want to study cloud-native application architecture. Which course is appropriate?",
+    "should_recommend": ["IT224"],
+    "should_not_recommend": ["IT223"]
+  },
+  {
+    "id": 15,
+    "nl_query": "I have completed STAT210 and MATH209 and want an advanced course on statistical learning. Which course should I choose?",
+    "should_recommend": ["STAT211"],
+    "should_not_recommend": ["STAT212"]
+  },
+  {
+    "id": 16,
+    "nl_query": "I want to take Deep Learning for Data Analysis, but I have completed STAT210 and have not completed CS231. Should the advisor recommend it?",
+    "should_recommend": [],
+    "should_not_recommend": ["STAT212"]
+  },
+  {
+    "id": 17,
+    "nl_query": "I have completed MATH209 and MATH204. I want to study advanced optimization. What course should I take?",
+    "should_recommend": ["MATH211"],
+    "should_not_recommend": ["MATH212"]
+  },
+  {
+    "id": 18,
+    "nl_query": "I have completed MATH207 and MATH105. I want to study computational methods for large linear algebra problems. Which course should I take?",
+    "should_recommend": ["MATH212"],
+    "should_not_recommend": ["MATH211"]
+  },
+  {
+    "id": 19,
+    "nl_query": "I have completed CS267 and CS254 and want AI Evaluation and Benchmarking, but I am already enrolled in a course scheduled Monday and Wednesday from 3:00 PM to 4:30 PM. Should CS289 still be recommended?",
+    "should_recommend": [],
+    "should_not_recommend": ["CS289"]
+  },
+  {
+    "id": 20,
+    "nl_query": "I have completed SE401 and SE225 and want a substantial software engineering project that integrates requirements, architecture, quality assurance, and evaluation. Which course should I take?",
+    "should_recommend": ["SE402"],
+    "should_not_recommend": ["SE238"]
+  }
+]

@@ -1,0 +1,33 @@
+{
+  "total_credits_required": 120,
+  "core_requirements": [
+    "MATH101",
+    "MATH102",
+    "MATH103",
+    "MATH104",
+    "STAT201",
+    "STAT202",
+    "STAT205",
+    "CS101",
+    "CS102",
+    "CS103",
+    "CS105",
+    "CS109",
+    "CS201",
+    "CS202",
+    "CS203",
+    "CS204",
+    "CS205",
+    "CS206",
+    "CS210",
+    "CS223",
+    "CS231",
+    "CS241",
+    "CS252",
+    "CS267",
+    "CS401"
+  ],
+  "elective_credits_required": 35,
+  "max_credits_per_semester": 18,
+  "min_credits_per_semester": 12
+}
