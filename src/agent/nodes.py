@@ -3,7 +3,7 @@ import sys
 import json
 import dotenv
 import cohere
-from typing import Any, Dict
+from typing import Any, Dict, List
 from pydantic import ValidationError
 
 from src.agent.state import AgentState
@@ -18,9 +18,9 @@ from src.agent.repair_loop import QueryRepairLoop
 from src.retrieval.retrieve import retrieve_courses, load_existing_index
 
 
-# ============================================================
+
 # PROJECT PATH
-# ============================================================
+
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, "../../"))
@@ -29,17 +29,17 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 
-# ============================================================
+
 # LAZY LOADING
-# ============================================================
+
 
 _vector_index = None
 _co_client = None
 
 
-# ============================================================
+
 # COHERE CLIENT
-# ============================================================
+
 
 def get_cohere_client():
     global _co_client
@@ -61,9 +61,9 @@ def get_cohere_client():
     return _co_client
 
 
-# ============================================================
+
 # VECTOR INDEX
-# ============================================================
+
 
 def get_vector_index():
     global _vector_index
@@ -79,9 +79,9 @@ def get_vector_index():
     return _vector_index
 
 
-# ============================================================
+
 # LLM TEXT
-# ============================================================
+
 
 def call_llm_text(prompt: str) -> str:
     try:
@@ -97,9 +97,9 @@ def call_llm_text(prompt: str) -> str:
         return ""
 
 
-# ============================================================
+
 # LLM JSON
-# ============================================================
+
 
 def call_llm_json(prompt: str) -> Dict[str, Any]:
     try:
@@ -118,9 +118,9 @@ def call_llm_json(prompt: str) -> Dict[str, Any]:
         raise
 
 
-# ============================================================
+
 # QUERY PARSER NODE
-# ============================================================
+
 
 def parse_query_node(state: AgentState):
 
@@ -167,14 +167,13 @@ def parse_query_node(state: AgentState):
             f"{type(e).__name__}: {e}"
         )
 
-        # NEW:
-        # أثناء debugging نريد أن نرى الخطأ الحقيقي
+       
         raise
 
 
-# ============================================================
+
 # RETRIEVAL NODE
-# ============================================================
+
 
 def retrieve_courses_node(state: AgentState):
 
@@ -184,9 +183,7 @@ def retrieve_courses_node(state: AgentState):
 
     parsed_filters = state.get("parsed_filters")
 
-    # --------------------------------------------------------
     # SAFETY CHECK
-    # --------------------------------------------------------
 
     if state.get("parsing_failed") or parsed_filters is None:
 
@@ -207,9 +204,7 @@ def retrieve_courses_node(state: AgentState):
     print(f"🔎 Query: {user_query}")
     print(f"📋 Filters: {parsed_filters}")
 
-    # --------------------------------------------------------
     # LOAD INDEX
-    # --------------------------------------------------------
 
     try:
 
@@ -229,9 +224,7 @@ def retrieve_courses_node(state: AgentState):
 
         raise
 
-    # --------------------------------------------------------
     # RETRIEVE
-    # --------------------------------------------------------
 
     try:
 
@@ -251,9 +244,7 @@ def retrieve_courses_node(state: AgentState):
 
         raise
 
-    # --------------------------------------------------------
     # DEBUG RETRIEVAL RESULT
-    # --------------------------------------------------------
 
     if retrieved_nodes is None:
 
@@ -270,8 +261,6 @@ def retrieve_courses_node(state: AgentState):
         f"{len(retrieved_nodes)}"
     )
 
-    # NEW:
-    # اطبع محتوى أول نتيجة لو موجودة
     if retrieved_nodes:
 
         print("🔎 [Retrieval] First retrieved node:")
@@ -283,9 +272,7 @@ def retrieve_courses_node(state: AgentState):
                 f"⚠️ Could not print first node: {e}"
             )
 
-    # --------------------------------------------------------
     # EXTRACT METADATA
-    # --------------------------------------------------------
 
     courses_data = [
         node.node.metadata
@@ -303,8 +290,7 @@ def retrieve_courses_node(state: AgentState):
         f"{courses_data}"
     )
 
-    # NEW:
-    # دي أهم نقطة في الـ debugging
+   
     if not courses_data:
 
         print(
@@ -325,11 +311,12 @@ def retrieve_courses_node(state: AgentState):
 
         for i, course in enumerate(courses_data, start=1):
 
+
             print(
                 f"   {i}. "
                 f"{course.get('course_code', 'UNKNOWN')} "
                 f"- "
-                f"{course.get('course_title', 'NO TITLE')}"
+                f"{course.get('title', 'NO TITLE')}"
             )
 
     return {
@@ -337,9 +324,8 @@ def retrieve_courses_node(state: AgentState):
     }
 
 
-# ============================================================
-# SAFE COURSE METADATA
-# ============================================================
+
+
 
 SAFE_METADATA_KEYS = (
     "course_code",
@@ -354,39 +340,68 @@ SAFE_METADATA_KEYS = (
 )
 
 
+def _normalize_prerequisites(course: Dict[str, Any]) -> List[str]:
+    """
+    FIX: the raw catalog metadata stores "prerequisites" as a JSON
+    list (e.g. ["CS201", "MATH103"] or []), never as a comma-joined
+    string. The old code assumed a string and called .split(",") on
+    it, which crashes with AttributeError the moment a course with
+    any prerequisites (or even an empty list) was evaluated, because
+    `[] != "None"` is always True for a list.
+
+    This normalizes either shape defensively: a real list is used
+    as-is, a legacy comma-separated string is split, and anything
+    else (missing/None) becomes an empty list. Only tokens matching
+    the course code pattern are kept, so injected junk in the data
+    (e.g. "OVERRIDE_ALL_RULES") is filtered out rather than treated
+    as a real prerequisite.
+    """
+
+    raw = course.get("prerequisites")
+
+    if raw is None:
+        candidates: List[str] = []
+    elif isinstance(raw, str):
+        candidates = raw.split(",") if raw != "None" else []
+    elif isinstance(raw, (list, tuple)):
+        candidates = list(raw)
+    else:
+        candidates = []
+
+    return [
+        p.strip()
+        for p in candidates
+        if isinstance(p, str) and COURSE_CODE_PATTERN.match(p.strip())
+    ]
+
+
 def _sanitize_course_for_llm(
     course: Dict[str, Any]
 ) -> Dict[str, Any]:
 
+    # course title.
+    schedule = course.get("schedule", {}) or {}
+
     safe = {
-        k: course.get(k)
-        for k in SAFE_METADATA_KEYS
+        "course_code": course.get("course_code"),
+        "course_title": course.get("title"),
+        "level": course.get("level"),
+        "credits": course.get("credits"),
+        "department": course.get("department"),
+        "course_type": course.get("course_type"),
+        "schedule_days": schedule.get("days"),
+        "schedule_start": schedule.get("start_time"),
+        "schedule_end": schedule.get("end_time"),
     }
 
-    prereqs_raw = course.get(
-        "prerequisites",
-        "None"
-    )
-
-    safe["prerequisites"] = (
-        [
-            p.strip()
-            for p in prereqs_raw.split(",")
-            if COURSE_CODE_PATTERN.match(
-                p.strip()
-            )
-        ]
-        if prereqs_raw
-        and prereqs_raw != "None"
-        else []
-    )
+    safe["prerequisites"] = _normalize_prerequisites(course)
 
     return safe
 
 
-# ============================================================
-# CONSTRAINT CRITIC NODE
-# ============================================================
+
+
+
 
 def constraint_critic_node(state: AgentState):
 
@@ -408,9 +423,6 @@ def constraint_critic_node(state: AgentState):
         f"{len(retrieved_courses)}"
     )
 
-    # --------------------------------------------------------
-    # NO COURSES
-    # --------------------------------------------------------
 
     if not retrieved_courses:
 
@@ -426,9 +438,7 @@ def constraint_critic_node(state: AgentState):
             ]
         }
 
-    # --------------------------------------------------------
-    # STUDENT INFORMATION
-    # --------------------------------------------------------
+
 
     completed_courses = (
         parsed_filters.completed_courses
@@ -460,9 +470,7 @@ def constraint_critic_node(state: AgentState):
         []
     )
 
-    # --------------------------------------------------------
-    # PROGRAMMATIC HARD CONSTRAINTS
-    # --------------------------------------------------------
+
 
     for course in retrieved_courses:
 
@@ -471,54 +479,23 @@ def constraint_critic_node(state: AgentState):
             "Unknown"
         )
 
-        # ----------------------------------------------------
-        # PREREQUISITES
-        # ----------------------------------------------------
 
-        prereqs_raw = course.get(
-            "prerequisites",
-            "None"
-        )
+        valid_prereqs = _normalize_prerequisites(course)
 
-        if prereqs_raw != "None":
+        missing = [
+            p
+            for p in valid_prereqs
+            if p not in completed_courses
+        ]
 
-            valid_prereqs = []
+        if missing:
 
-            for p in prereqs_raw.split(","):
+            violations.append(
+                f"{c_code} has unmet prerequisites: "
+                f"{', '.join(missing)}"
+            )
 
-                p_clean = p.strip()
 
-                if COURSE_CODE_PATTERN.match(
-                    p_clean
-                ):
-
-                    valid_prereqs.append(
-                        p_clean
-                    )
-
-                else:
-
-                    integrity_flags.append(
-                        f"Corrupted prerequisite ignored "
-                        f"in {c_code}: {p_clean}"
-                    )
-
-            missing = [
-                p
-                for p in valid_prereqs
-                if p not in completed_courses
-            ]
-
-            if missing:
-
-                violations.append(
-                    f"{c_code} has unmet prerequisites: "
-                    f"{', '.join(missing)}"
-                )
-
-        # ----------------------------------------------------
-        # CREDIT LIMIT
-        # ----------------------------------------------------
 
         c_credits = course.get(
             "credits",
@@ -536,9 +513,7 @@ def constraint_critic_node(state: AgentState):
                 f"{MAX_CREDITS_PER_SEMESTER}-credit limit."
             )
 
-    # --------------------------------------------------------
     # SANITIZE DATA FOR LLM
-    # --------------------------------------------------------
 
     safe_course_data = [
         _sanitize_course_for_llm(c)
@@ -561,9 +536,7 @@ def constraint_critic_node(state: AgentState):
     {{"violations": []}}
     """
 
-    # --------------------------------------------------------
-    # LLM CRITIC
-    # --------------------------------------------------------
+
 
     try:
 
@@ -571,21 +544,10 @@ def constraint_critic_node(state: AgentState):
             evaluation_prompt
         )
 
-        llm_violations = (
-            violations_response.get(
-                "violations",
-                []
-            )
-            if isinstance(
-                violations_response,
-                dict
-            )
-            else []
-        )
+        llm_violations = violations_response.get("violations", [])
 
-        violations.extend(
-            llm_violations
-        )
+        print(f"🤖 [Critic] LLM observations: {llm_violations}")
+        print(f"🔒 [Critic] Hard violations: {violations}")
 
     except Exception as e:
 
@@ -599,9 +561,7 @@ def constraint_critic_node(state: AgentState):
             "Human review strictly mandated."
         )
 
-    # --------------------------------------------------------
-    # FINAL CRITIC RESULT
-    # --------------------------------------------------------
+
 
     violations = list(
         set(violations)
@@ -630,9 +590,9 @@ def constraint_critic_node(state: AgentState):
     }
 
 
-# ============================================================
-# FINAL RECOMMENDER NODE
-# ============================================================
+
+
+
 
 def generate_recommendation_node(
     state: AgentState
@@ -652,8 +612,7 @@ def generate_recommendation_node(
         f"{len(retrieved_courses)}"
     )
 
-    # NEW:
-    # لا نحاول تشغيل LLM لو مفيش courses أصلاً
+    
     if not retrieved_courses:
 
         print(
@@ -712,9 +671,6 @@ def generate_recommendation_node(
     final_advice = None
     error_feedback = ""
 
-    # --------------------------------------------------------
-    # REPAIR LOOP
-    # --------------------------------------------------------
 
     for attempt in range(3):
 
@@ -784,9 +740,6 @@ def generate_recommendation_node(
                 f"{str(e)}"
             )
 
-    # --------------------------------------------------------
-    # FAIL-SAFE
-    # --------------------------------------------------------
 
     if final_advice is None:
 

@@ -2,11 +2,12 @@ import datetime
 import time
 import requests
 import streamlit as st
+import json
 
 
-# =========================================================
+
 # PAGE CONFIG
-# =========================================================
+
 
 st.set_page_config(
     page_title="Course Advisor",
@@ -16,9 +17,9 @@ st.set_page_config(
 )
 
 
-# =========================================================
+
 # CUSTOM CSS (Balanced Medium-Dark Sidebar)
-# =========================================================
+
 
 st.markdown(
     """
@@ -66,6 +67,31 @@ st.markdown(
        so they should stay light (covered by the rule above already). */
 
 
+    /* FIX: catch-all — ANY result rendered in the main content area after
+       the "Find Courses" button runs (metrics, alerts, course cards,
+       advisor message, JSON viewer, expander text, etc.) must default to
+       dark text. Placed before the more specific rules below so those can
+       still win for the few elements that need a different color
+       (blue course code, green confidence pill, white button/hero text). */
+    section[data-testid="stMain"] * {
+        color: #1A2238 !important;
+        -webkit-text-fill-color: #1A2238 !important;
+    }
+
+    /* Student search box */
+    section[data-testid="stMain"] textarea {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        caret-color: #ffffff !important;
+        background-color: #272830 !important;
+    }
+
+    section[data-testid="stMain"] textarea::placeholder {
+        color: #94a3b8 !important;
+        -webkit-text-fill-color: #94a3b8 !important;
+        opacity: 1 !important;
+    }
+
     div[data-testid="stMetric"] {
         background: white;
         border: 1px solid #e2e8f0;
@@ -78,13 +104,26 @@ st.markdown(
         transform: translateY(-3px);
         border-color: #2563eb;
     }
-    div[data-testid="stMetricLabel"] {
-        color: #64748b !important;
-        font-weight: 600;
-    }
-    div[data-testid="stMetricValue"] {
+    /* FIX: metric text (labels like "Recommendations"/"Violations" AND the
+       big numbers/values like "2"/"Required"/"121.81s") were rendering
+       white-on-white, invisible until selected. A theme-level style is
+       winning on specificity/order, so we force EVERY element inside the
+       metric card to dark text with maximum specificity, no exceptions. */
+    div[data-testid="stMetric"],
+    div[data-testid="stMetric"] *,
+    div[data-testid="stMetricLabel"],
+    div[data-testid="stMetricLabel"] *,
+    div[data-testid="stMetricValue"],
+    div[data-testid="stMetricValue"] * {
         color: #1A2238 !important;
-        font-weight: 800;
+        -webkit-text-fill-color: #1A2238 !important;
+        opacity: 1 !important;
+    }
+    div[data-testid="stMetricLabel"] * {
+        font-weight: 700 !important;
+    }
+    div[data-testid="stMetricValue"] * {
+        font-weight: 800 !important;
     }
 
 
@@ -113,22 +152,28 @@ st.markdown(
         box-shadow: 0 20px 35px -15px rgba(37, 99, 235, 0.15);
         border-color: #2563eb;
     }
-    .course-code {
+    section[data-testid="stMain"] .course-code,
+    section[data-testid="stMain"] .course-code * {
         color: #2563eb !important;
+        -webkit-text-fill-color: #2563eb !important;
         font-size: 13px;
         font-weight: 800;
         letter-spacing: 1px;
         text-transform: uppercase;
     }
-    .course-title {
+    section[data-testid="stMain"] .course-title,
+    section[data-testid="stMain"] .course-title * {
         color: #1A2238 !important;
+        -webkit-text-fill-color: #1A2238 !important;
         font-size: 20px;
         font-weight: 750;
         margin-top: 6px;
         margin-bottom: 8px;
     }
-    .confidence {
+    section[data-testid="stMain"] .confidence,
+    section[data-testid="stMain"] .confidence * {
         color: #10b981 !important;
+        -webkit-text-fill-color: #10b981 !important;
         font-weight: 700;
         font-size: 13px;
         background: #ecfdf5;
@@ -137,9 +182,11 @@ st.markdown(
         display: inline-block;
     }
 
-    .stButton > button {
+    section[data-testid="stMain"] .stButton > button,
+    section[data-testid="stMain"] .stButton > button * {
         background: linear-gradient(135deg, #2563eb 0%, #d4a373 100%) !important;
         color: white !important;
+        -webkit-text-fill-color: white !important;
         border: none !important;
         border-radius: 14px;
         font-weight: 700;
@@ -168,10 +215,13 @@ st.markdown(
     }
     /* Exception: the hero banner's own heading must stay white — it sits
        on a dark blue/gold gradient, not the page background. */
+    section[data-testid="stMain"] .hero-banner,
+    section[data-testid="stMain"] .hero-banner *,
     section[data-testid="stMain"] .hero-banner h1,
     section[data-testid="stMain"] .hero-banner h2,
     section[data-testid="stMain"] .hero-banner h3 {
         color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
     }
     section[data-testid="stMain"] div[data-testid="stAlert"] p,
     section[data-testid="stMain"] div[data-testid="stAlert"] span,
@@ -184,9 +234,9 @@ st.markdown(
 )
 
 
-# =========================================================
+
 # SESSION STATE
-# =========================================================
+
 
 if "last_response" not in st.session_state:
     st.session_state.last_response = None
@@ -198,9 +248,9 @@ if "last_latency" not in st.session_state:
     st.session_state.last_latency = 0.0
 
 
-# =========================================================
+
 # SIDEBAR
-# =========================================================
+
 
 with st.sidebar:
     st.markdown("### 🎓 Course Advisor")
@@ -244,45 +294,380 @@ with st.sidebar:
     )
 
 
-# =========================================================
-# API CALL
-# =========================================================
 
-def call_advisor(query: str):
+# API CALL
+
+
+def call_advisor_stream(query: str, status_container):
+
     start_time = time.perf_counter()
 
     try:
+
         response = requests.post(
-            endpoint,
+            f"{api_url.rstrip('/')}/advise/stream",
             json={"query": query},
-            timeout=300,
+            timeout=120,
+            stream=True,
         )
 
-        latency = time.perf_counter() - start_time
         response.raise_for_status()
 
-        return response.json(), latency, None
+        final_response = None
+        thread_id = None
+
+        for line in response.iter_lines(
+            decode_unicode=True
+        ):
+
+            if not line:
+                continue
+
+            if not line.startswith("data:"):
+                continue
+
+            raw_data = line[5:].strip()
+
+            try:
+                event = json.loads(raw_data)
+            except json.JSONDecodeError:
+                continue
+
+            event_type = event.get("type")
+            message = event.get("message", "")
+            event_data = event.get("data", {})
+
+            
+            # START
+            
+
+            if event_type == "start":
+
+                thread_id = event_data.get(
+                    "thread_id"
+                )
+
+                status_container.write(
+                    message
+                )
+
+            
+            # NODE / PROGRESS
+            
+
+            elif event_type == "node":
+
+                status_container.write(
+                    message
+                )
+
+            
+            # COMPLETE
+            
+
+            elif event_type == "complete":
+
+                status_container.write(
+                    message
+                )
+
+            
+            # HUMAN REVIEW
+            
+
+            elif event_type == "human_review":
+
+                status_container.warning(
+                    message
+                )
+
+                if event_data.get(
+                    "thread_id"
+                ):
+                    thread_id = event_data[
+                        "thread_id"
+                    ]
+
+            
+            # FINAL RESPONSE
+            
+
+            elif event_type == "final":
+
+                final_response = event_data.get(
+                    "response"
+                )
+
+                status_container.success(
+                    message
+                )
+
+            
+            # ERROR
+            
+
+            elif event_type == "error":
+
+                return (
+                    None,
+                    time.perf_counter() - start_time,
+                    message,
+                    thread_id,
+                )
+
+        latency = (
+            time.perf_counter()
+            - start_time
+        )
+
+        return (
+            final_response,
+            latency,
+            None,
+            thread_id,
+        )
 
     except requests.exceptions.ConnectionError:
-        latency = time.perf_counter() - start_time
-        return None, latency, "Could not connect to FastAPI. Make sure the backend is running."
+
+        return (
+            None,
+            time.perf_counter() - start_time,
+            "Could not connect to FastAPI.",
+            None,
+        )
 
     except requests.exceptions.Timeout:
-        latency = time.perf_counter() - start_time
-        return None, latency, "The request timed out. The advisor may still be processing."
+
+        return (
+            None,
+            time.perf_counter() - start_time,
+            "The request timed out.",
+            None,
+        )
 
     except requests.exceptions.HTTPError as error:
-        latency = time.perf_counter() - start_time
-        return None, latency, f"FastAPI returned an error: {error}"
+
+        return (
+            None,
+            time.perf_counter() - start_time,
+            f"FastAPI returned an error: {error}",
+            None,
+        )
 
     except Exception as error:
-        latency = time.perf_counter() - start_time
-        return None, latency, f"Unexpected error: {error}"
+
+        return (
+            None,
+            time.perf_counter() - start_time,
+            f"Unexpected error: {error}",
+            None,
+        )
 
 
-# =========================================================
+
+
+
+
+# def clean_course_title(code: str, title) -> str:
+#     """The backend sometimes returns a missing/None title (which renders
+#     as the literal string 'null'/'None' once serialized). Fall back to
+#     showing the course code itself instead of that placeholder text."""
+#     if title is None:
+#         return code or "Unknown Course"
+
+#     title_str = str(title).strip()
+
+#     if title_str == "" or title_str.lower() in ("null", "none", "undefined"):
+#         return code or "Unknown Course"
+
+#     return title_str
+
+import os
+
+
+# COURSE CATALOG LOOKUP
+
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+KNOWLEDGE_BASE_DIR = os.path.join(
+    BASE_DIR,
+    "data",
+    "knowledge_base"
+)
+
+CATALOG_PATH = os.path.join(
+    KNOWLEDGE_BASE_DIR,
+    "catalog.json"
+)
+
+DESCRIPTIONS_PATH = os.path.join(
+    KNOWLEDGE_BASE_DIR,
+    "descriptions.json"
+)
+
+
+def load_json_file(path):
+
+    try:
+        with open(path, "r", encoding="utf-8") as file:
+            return json.load(file)
+
+    except Exception:
+        return None
+
+
+COURSE_CATALOG = load_json_file(CATALOG_PATH)
+COURSE_DESCRIPTIONS = load_json_file(DESCRIPTIONS_PATH)
+
+
+def find_course_title_in_data(data, course_code):
+
+    if data is None:
+        return None
+
+    course_code = str(course_code).strip().upper()
+
+    # Dictionary
+    if isinstance(data, dict):
+
+        # Example:
+        # {
+        #     "CS285": {
+        #         "title": "..."
+        #     }
+        # }
+
+        for key, value in data.items():
+
+            if str(key).strip().upper() == course_code:
+
+                if isinstance(value, str):
+                    return value.strip()
+
+                if isinstance(value, dict):
+
+                    for title_key in [
+                        "course_title",
+                        "title",
+                        "name",
+                        "course_name",
+                    ]:
+
+                        title = value.get(title_key)
+
+                        if title:
+                            return str(title).strip()
+
+        # Search recursively
+        for value in data.values():
+
+            result = find_course_title_in_data(
+                value,
+                course_code
+            )
+
+            if result:
+                return result
+
+    # List
+    elif isinstance(data, list):
+
+        for item in data:
+
+            if isinstance(item, dict):
+
+                item_code = None
+
+                for code_key in [
+                    "course_code",
+                    "code",
+                    "courseCode",
+                    "course_id",
+                    "id",
+                ]:
+
+                    if code_key in item:
+
+                        item_code = item.get(code_key)
+
+                        if item_code is not None:
+                            item_code = str(
+                                item_code
+                            ).strip().upper()
+
+                            if item_code == course_code:
+
+                                for title_key in [
+                                    "course_title",
+                                    "title",
+                                    "name",
+                                    "course_name",
+                                    "courseName",
+                                ]:
+
+                                    title = item.get(
+                                        title_key
+                                    )
+
+                                    if title:
+                                        return str(
+                                            title
+                                        ).strip()
+
+                result = find_course_title_in_data(
+                    item,
+                    course_code
+                )
+
+                if result:
+                    return result
+
+    return None
+
+
+def clean_course_title(code, title=None):
+
+    code = str(code).strip().upper()
+
+    # 1. Try title returned by API
+    if title is not None:
+
+        title = str(title).strip()
+
+        if title and title.lower() not in [
+            "null",
+            "none",
+            "undefined",
+            "unknown",
+        ]:
+
+            return title
+
+    # 2. Search catalog.json
+    title_from_catalog = find_course_title_in_data(
+        COURSE_CATALOG,
+        code
+    )
+
+    if title_from_catalog:
+        return title_from_catalog
+
+    # 3. Search descriptions.json
+    title_from_description = find_course_title_in_data(
+        COURSE_DESCRIPTIONS,
+        code
+    )
+
+    if title_from_description:
+        return title_from_description
+
+    # 4. Last fallback
+    return code
+
+
 # MARKDOWN EXPORT
-# =========================================================
+
 
 def build_markdown(query, data):
     lines = []
@@ -304,7 +689,7 @@ def build_markdown(query, data):
     else:
         for rec in recommendations:
             code = rec.get("course_code", "Unknown")
-            title = rec.get("course_title", "Unknown")
+            title = clean_course_title(code, rec.get("course_title"))
             confidence = rec.get("confidence", 0)
 
             lines.append(f"### {code} — {title}")
@@ -341,9 +726,9 @@ def build_markdown(query, data):
     return "\n".join(lines)
 
 
-# =========================================================
+
 # ADVISOR PAGE
-# =========================================================
+
 
 if page == "🎓 Advisor":
 
@@ -398,8 +783,14 @@ if page == "🎓 Advisor":
         if not query.strip():
             st.warning("Please describe what you want to study first.")
         else:
-            with st.spinner("🤖 Analyzing your profile & finding the best match..."):
-                data, latency, error = call_advisor(query.strip())
+            status_container = st.empty()
+            with status_container.container():
+                data, latency, error, thread_id = call_advisor_stream(
+                    query.strip(),
+                    status_container
+                )
+
+        if thread_id:   
 
             st.session_state.last_query = query.strip()
             st.session_state.last_latency = latency
@@ -451,14 +842,14 @@ if page == "🎓 Advisor":
         else:
             for index, rec in enumerate(recommendations, start=1):
                 code = rec.get("course_code", "Unknown")
-                title = rec.get("course_title", "Unknown Course")
+                title = clean_course_title(code, rec.get("course_title"))
                 confidence = rec.get("confidence", 0)
                 satisfies = rec.get("satisfies", [])
 
                 st.markdown(
                     f"""
                     <div class="course-card">
-                        <div class="course-code">OPTION #{index} • {code}</div>
+                        <div class="course-code">OPTION #{index}</div>
                         <div class="course-title">{title}</div>
                         <div class="confidence">✨ Match Confidence: {confidence:.0%}</div>
                     </div>
@@ -489,7 +880,7 @@ if page == "🎓 Advisor":
         markdown_report = build_markdown(st.session_state.last_query, data)
 
         st.download_button(
-            label="📄 Download Markdown Summary",
+            label="📄",
             data=markdown_report,
             file_name="course_advisor_result.md",
             mime="text/markdown",
@@ -499,9 +890,9 @@ if page == "🎓 Advisor":
             st.json(data)
 
 
-# =========================================================
+
 # EVALUATION PAGE
-# =========================================================
+
 
 elif page == "📊 Evaluation":
     st.markdown("### 📊 Evaluation")
@@ -520,9 +911,9 @@ elif page == "📊 Evaluation":
     st.info("This page is ready to display the results generated by the team's evaluation pipeline.")
 
 
-# =========================================================
+
 # SECURITY PAGE
-# =========================================================
+
 
 elif page == "🛡️ Security":
     st.markdown("### 🛡️ Security")
@@ -546,9 +937,9 @@ elif page == "🛡️ Security":
     st.caption("Security test results will be connected to the team's red-team evaluation.")
 
 
-# =========================================================
+
 # OBSERVABILITY PAGE
-# =========================================================
+
 
 elif page == "💰 Observability":
     st.markdown("### 💰 Cost & Observability")
