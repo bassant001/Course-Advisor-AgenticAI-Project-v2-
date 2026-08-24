@@ -1,3 +1,4 @@
+import operator
 from typing import Annotated, Any, Dict, List, Optional
 from typing_extensions import TypedDict
 from langgraph.graph.message import add_messages
@@ -32,3 +33,6 @@ class AgentState(TypedDict):
     
     # no conflict or rejection -> agent response
     final_advice: Optional[AdviceResponse]
+
+    total_input_tokens: Annotated[int, operator.add]
+    total_output_tokens: Annotated[int, operator.add]

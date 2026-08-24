@@ -22,9 +22,19 @@ graph_app = build_course_advisor_graph()
 
 
 
+COST_PER_MILLION_INPUT_TOKENS = 2.50
+COST_PER_MILLION_OUTPUT_TOKENS = 10.00
+
+
+def estimate_cost_usd(input_tokens: int, output_tokens: int) -> float:
+    return (
+        (input_tokens / 1_000_000) * COST_PER_MILLION_INPUT_TOKENS
+        + (output_tokens / 1_000_000) * COST_PER_MILLION_OUTPUT_TOKENS
+    )
+
+
+
 # HELPERS
-
-
 def make_event(event_type: str, message: str, data=None):
     """
     Convert an internal event into a Server-Sent Event.
@@ -41,10 +51,29 @@ def make_event(event_type: str, message: str, data=None):
     return f"data: {json.dumps(payload, default=str)}\n\n"
 
 
+def build_usage_payload(state_values: dict) -> dict:
+    """
+    Pull the running token totals out of the graph's final state and
+    turn them into the small dict the frontend expects to find under
+    `data.usage` on the "final" event.
+    """
+
+    input_tokens = state_values.get("total_input_tokens", 0) or 0
+    output_tokens = state_values.get("total_output_tokens", 0) or 0
+
+    return {
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "total_tokens": input_tokens + output_tokens,
+        "estimated_cost_usd": round(
+            estimate_cost_usd(input_tokens, output_tokens),
+            6,
+        ),
+    }
+
+
 
 # STREAMING ADVISOR
-
-
 @router.post("/advise/stream")
 @limiter.limit("10/minute")
 async def advise_stream(request: Request, body: AdviceRequest):
@@ -68,6 +97,8 @@ async def advise_stream(request: Request, body: AdviceRequest):
         "parsing_failed": False,
         "integrity_flags": [],
         "final_advice": None,
+        "total_input_tokens": 0,
+        "total_output_tokens": 0,
     }
 
     async def event_generator():
@@ -260,6 +291,14 @@ async def advise_stream(request: Request, body: AdviceRequest):
                                     final_advice.model_dump()
                                 )
 
+                            # NOTE: `update` here is only what THIS node
+                            # returned, not the fully-reduced graph state,
+                            # so it doesn't include token usage from
+                            # earlier nodes (parser/critic). We
+                            # deliberately don't attach `usage` to this
+                            # intermediate event — the accurate,
+                            # cumulative total is read from the reduced
+                            # state after the stream finishes below.
                             yield make_event(
                                 "final",
                                 "🎉 Recommendations are ready!",
@@ -310,7 +349,10 @@ async def advise_stream(request: Request, body: AdviceRequest):
                     "🎉 Final recommendation generated.",
                     {
                         "thread_id": thread_id,
-                        "response": final_advice
+                        "response": final_advice,
+                        "usage": build_usage_payload(
+                            current_state.values
+                        ),
                     }
                 )
 
@@ -350,8 +392,6 @@ async def advise_stream(request: Request, body: AdviceRequest):
 
 
 # NORMAL ADVISOR ENDPOINT
-
-
 @router.post(
     "/advise",
     response_model=AdviceResponse
@@ -381,6 +421,8 @@ async def advise(
         "parsing_failed": False,
         "integrity_flags": [],
         "final_advice": None,
+        "total_input_tokens": 0,
+        "total_output_tokens": 0,
     }
 
     try:
@@ -433,8 +475,6 @@ async def advise(
 
 
 # HUMAN REVIEW
-
-
 @router.post(
     "/human-review",
     response_model=AdviceResponse
@@ -507,8 +547,6 @@ async def human_review(
 
 
 # EVALUATION
-
-
 @router.get("/evaluation/metrics")
 async def evaluation_metrics():
 

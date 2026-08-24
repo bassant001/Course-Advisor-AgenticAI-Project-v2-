@@ -18,14 +18,22 @@ st.set_page_config(
 
 
 
-# CUSTOM CSS (Balanced Medium-Dark Sidebar)
+# CUSTOM CSS (Navy / Sapphire / Warm Taupe / Champagne / Ivory palette)
 
 
 st.markdown(
     """
     <style>
+    :root {
+        --navy: #112250;
+        --sapphire: #3B507D;
+        --taupe: #BEB7A7;
+        --champagne: #E7E2CE;
+        --ivory: #F5F4F0;
+    }
+
     .stApp {
-        background: #f8fafc;
+        background: var(--ivory);
     }
     .block-container {
         padding-top: 2rem;
@@ -34,89 +42,92 @@ st.markdown(
     }
 
     [data-testid="stSidebar"] {
-        background: #1e293b !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.08);
+        background: var(--navy) !important;
+        border-right: 1px solid rgba(231, 226, 206, 0.12);
     }
-    /* Light text for everything in the sidebar EXCEPT form controls,
-       which keep their own (light) background and need dark text. */
+    /* Light (champagne) text for everything in the sidebar EXCEPT form
+       controls, which keep their own (light) background and need dark
+       navy text for contrast. */
     [data-testid="stSidebar"] *:not(input):not(textarea):not(select) {
-        color: #E2E8F0 !important;
+        color: var(--champagne) !important;
     }
 
     /* FIX: sidebar text input (FastAPI URL) was inheriting the light
-       #E2E8F0 text color while sitting on a white input box, making
-       the typed text nearly invisible. Force dark text + white bg. */
+       champagne text color while sitting on a white input box, making
+       the typed text nearly invisible. Force dark navy text + ivory bg. */
     [data-testid="stSidebar"] input,
     [data-testid="stSidebar"] textarea,
     [data-testid="stSidebar"] select {
-        color: #1A2238 !important;
-        background-color: #ffffff !important;
-        caret-color: #1A2238 !important;
+        color: var(--navy) !important;
+        background-color: var(--ivory) !important;
+        caret-color: var(--navy) !important;
     }
     [data-testid="stSidebar"] .stTextInput > div > div,
     [data-testid="stSidebar"] [data-baseweb="input"],
     [data-testid="stSidebar"] [data-baseweb="select"] {
-        background-color: #ffffff !important;
+        background-color: var(--ivory) !important;
         border-radius: 8px;
     }
     [data-testid="stSidebar"] input::placeholder {
-        color: #94a3b8 !important;
+        color: #8A8676 !important;
     }
 
-    /* Radio option labels sit directly on the dark sidebar background,
-       so they should stay light (covered by the rule above already). */
+    /* Radio option labels sit directly on the dark navy sidebar
+       background, so they should stay champagne (covered above already). */
 
 
     /* FIX: catch-all — ANY result rendered in the main content area after
        the "Find Courses" button runs (metrics, alerts, course cards,
        advisor message, JSON viewer, expander text, etc.) must default to
-       dark text. Placed before the more specific rules below so those can
-       still win for the few elements that need a different color
-       (blue course code, green confidence pill, white button/hero text). */
+       dark navy text. Placed before the more specific rules below so those
+       can still win for the few elements that need a different color
+       (sapphire course code, sapphire/champagne confidence pill, white
+       button/hero text). */
     section[data-testid="stMain"] * {
-        color: #1A2238 !important;
-        -webkit-text-fill-color: #1A2238 !important;
+        color: var(--navy) !important;
+        -webkit-text-fill-color: var(--navy) !important;
     }
 
     /* Student search box */
     section[data-testid="stMain"] textarea {
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-        caret-color: #ffffff !important;
-        background-color: #272830 !important;
+        color: var(--ivory) !important;
+        -webkit-text-fill-color: var(--ivory) !important;
+        caret-color: var(--ivory) !important;
+        background-color: var(--navy) !important;
     }
 
     section[data-testid="stMain"] textarea::placeholder {
-        color: #94a3b8 !important;
-        -webkit-text-fill-color: #94a3b8 !important;
+        color: var(--taupe) !important;
+        -webkit-text-fill-color: var(--taupe) !important;
         opacity: 1 !important;
     }
 
     div[data-testid="stMetric"] {
         background: white;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--taupe);
         border-radius: 16px;
         padding: 20px;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+        box-shadow: 0 10px 25px -5px rgba(17, 34, 80, 0.05), 0 8px 10px -6px rgba(17, 34, 80, 0.04);
         transition: all 0.3s ease;
     }
     div[data-testid="stMetric"]:hover {
         transform: translateY(-3px);
-        border-color: #2563eb;
+        border-color: var(--sapphire);
     }
     /* FIX: metric text (labels like "Recommendations"/"Violations" AND the
        big numbers/values like "2"/"Required"/"121.81s") were rendering
        white-on-white, invisible until selected. A theme-level style is
        winning on specificity/order, so we force EVERY element inside the
-       metric card to dark text with maximum specificity, no exceptions. */
+       metric card to dark navy text with maximum specificity, no
+       exceptions. */
     div[data-testid="stMetric"],
     div[data-testid="stMetric"] *,
     div[data-testid="stMetricLabel"],
     div[data-testid="stMetricLabel"] *,
     div[data-testid="stMetricValue"],
     div[data-testid="stMetricValue"] * {
-        color: #1A2238 !important;
-        -webkit-text-fill-color: #1A2238 !important;
+        color: var(--navy) !important;
+        -webkit-text-fill-color: var(--navy) !important;
         opacity: 1 !important;
     }
     div[data-testid="stMetricLabel"] * {
@@ -131,9 +142,9 @@ st.markdown(
         background: white;
         padding: 24px;
         border-radius: 20px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--taupe);
         margin-bottom: 18px;
-        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 10px 30px -10px rgba(17, 34, 80, 0.06);
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
@@ -145,17 +156,17 @@ st.markdown(
         left: 0;
         width: 5px;
         height: 100%;
-        background: linear-gradient(to bottom, #2563eb, #d4a373);
+        background: linear-gradient(to bottom, var(--sapphire), var(--taupe));
     }
     .course-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 20px 35px -15px rgba(37, 99, 235, 0.15);
-        border-color: #2563eb;
+        box-shadow: 0 20px 35px -15px rgba(59, 80, 125, 0.20);
+        border-color: var(--sapphire);
     }
     section[data-testid="stMain"] .course-code,
     section[data-testid="stMain"] .course-code * {
-        color: #2563eb !important;
-        -webkit-text-fill-color: #2563eb !important;
+        color: var(--sapphire) !important;
+        -webkit-text-fill-color: var(--sapphire) !important;
         font-size: 13px;
         font-weight: 800;
         letter-spacing: 1px;
@@ -163,8 +174,8 @@ st.markdown(
     }
     section[data-testid="stMain"] .course-title,
     section[data-testid="stMain"] .course-title * {
-        color: #1A2238 !important;
-        -webkit-text-fill-color: #1A2238 !important;
+        color: var(--navy) !important;
+        -webkit-text-fill-color: var(--navy) !important;
         font-size: 20px;
         font-weight: 750;
         margin-top: 6px;
@@ -172,11 +183,11 @@ st.markdown(
     }
     section[data-testid="stMain"] .confidence,
     section[data-testid="stMain"] .confidence * {
-        color: #10b981 !important;
-        -webkit-text-fill-color: #10b981 !important;
+        color: var(--sapphire) !important;
+        -webkit-text-fill-color: var(--sapphire) !important;
         font-weight: 700;
         font-size: 13px;
-        background: #ecfdf5;
+        background: var(--champagne);
         padding: 4px 10px;
         border-radius: 20px;
         display: inline-block;
@@ -184,26 +195,45 @@ st.markdown(
 
     section[data-testid="stMain"] .stButton > button,
     section[data-testid="stMain"] .stButton > button * {
-        background: linear-gradient(135deg, #2563eb 0%, #d4a373 100%) !important;
-        color: white !important;
-        -webkit-text-fill-color: white !important;
+        background: linear-gradient(135deg, var(--navy) 0%, var(--sapphire) 100%) !important;
+        color: var(--ivory) !important;
+        -webkit-text-fill-color: var(--ivory) !important;
         border: none !important;
         border-radius: 14px;
         font-weight: 700;
         min-height: 48px;
-        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.25);
+        box-shadow: 0 4px 15px rgba(17, 34, 80, 0.28);
         transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        isolation: isolate;
     }
-    .stButton > button:hover {
+    /* FIX: BaseWeb (the library Streamlit's buttons are built on) renders
+       an internal ::before/::after layer to animate the hover/press
+       state. That inner layer isn't covered by the selector above, so it
+       stayed visible as a faint, offset "ghost" duplicate of the button
+       behind our gradient. Neutralize it explicitly. */
+    section[data-testid="stMain"] .stButton > button::before,
+    section[data-testid="stMain"] .stButton > button::after {
+        background: none !important;
+        box-shadow: none !important;
+        content: none !important;
+    }
+    section[data-testid="stMain"] .stButton > button:hover {
         opacity: 0.95;
-        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+        box-shadow: 0 6px 20px rgba(17, 34, 80, 0.42);
         transform: translateY(-1px);
+    }
+    section[data-testid="stMain"] .stButton > button:focus,
+    section[data-testid="stMain"] .stButton > button:active {
+        box-shadow: 0 4px 15px rgba(17, 34, 80, 0.28) !important;
+        outline: none !important;
     }
 
     /* FIX: headings and alert text (st.subheader, st.warning, st.info,
        st.success, st.error) were rendering white/light — inherited from
        a dark base theme — and were unreadable against the light page
-       background and pale alert boxes. Force dark text in the main
+       background and pale alert boxes. Force dark navy text in the main
        content area. The sidebar keeps its own light-on-dark rules above. */
     section[data-testid="stMain"] h1,
     section[data-testid="stMain"] h2,
@@ -211,22 +241,22 @@ st.markdown(
     section[data-testid="stMain"] h4,
     section[data-testid="stMain"] h5,
     section[data-testid="stMain"] h6 {
-        color: #1A2238 !important;
+        color: var(--navy) !important;
     }
-    /* Exception: the hero banner's own heading must stay white — it sits
-       on a dark blue/gold gradient, not the page background. */
+    /* Exception: the hero banner's own heading must stay ivory — it sits
+       on a dark navy/sapphire/taupe gradient, not the page background. */
     section[data-testid="stMain"] .hero-banner,
     section[data-testid="stMain"] .hero-banner *,
     section[data-testid="stMain"] .hero-banner h1,
     section[data-testid="stMain"] .hero-banner h2,
     section[data-testid="stMain"] .hero-banner h3 {
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
+        color: var(--ivory) !important;
+        -webkit-text-fill-color: var(--ivory) !important;
     }
     section[data-testid="stMain"] div[data-testid="stAlert"] p,
     section[data-testid="stMain"] div[data-testid="stAlert"] span,
     section[data-testid="stMain"] div[data-testid="stAlert"] div {
-        color: #1A2238 !important;
+        color: var(--navy) !important;
     }
     </style>
     """,
@@ -252,6 +282,9 @@ if "eval_metrics" not in st.session_state:
 
 if "eval_error" not in st.session_state:  
     st.session_state.eval_error = None  
+
+if "last_usage" not in st.session_state:
+    st.session_state.last_usage = None
 
 # SIDEBAR
 
@@ -318,6 +351,7 @@ def call_advisor_stream(query: str, status_container):
         response.raise_for_status()
 
         final_response = None
+        usage = None
         thread_id = None
 
         for line in response.iter_lines(
@@ -402,6 +436,10 @@ def call_advisor_stream(query: str, status_container):
                     "response"
                 )
 
+                usage = event_data.get(
+                    "usage"
+                )
+
                 status_container.success(
                     message
                 )
@@ -417,6 +455,7 @@ def call_advisor_stream(query: str, status_container):
                     time.perf_counter() - start_time,
                     message,
                     thread_id,
+                    None,
                 )
 
         latency = (
@@ -429,6 +468,7 @@ def call_advisor_stream(query: str, status_container):
             latency,
             None,
             thread_id,
+            usage,
         )
 
     except requests.exceptions.ConnectionError:
@@ -437,6 +477,7 @@ def call_advisor_stream(query: str, status_container):
             None,
             time.perf_counter() - start_time,
             "Could not connect to FastAPI.",
+            None,
             None,
         )
 
@@ -447,6 +488,7 @@ def call_advisor_stream(query: str, status_container):
             time.perf_counter() - start_time,
             "The request timed out.",
             None,
+            None,
         )
 
     except requests.exceptions.HTTPError as error:
@@ -456,6 +498,7 @@ def call_advisor_stream(query: str, status_container):
             time.perf_counter() - start_time,
             f"FastAPI returned an error: {error}",
             None,
+            None,
         )
 
     except Exception as error:
@@ -464,6 +507,7 @@ def call_advisor_stream(query: str, status_container):
             None,
             time.perf_counter() - start_time,
             f"Unexpected error: {error}",
+            None,
             None,
         )
 
@@ -700,6 +744,7 @@ def build_markdown(query, data):
             lines.append(f"- Confidence: {confidence:.0%}")
 
             satisfies = rec.get("satisfies", [])
+
             if satisfies:
                 lines.append("- Why it fits:")
                 for reason in satisfies:
@@ -740,18 +785,18 @@ if page == "🎓 Advisor":
     st.markdown(
         """
         <div class="hero-banner" style="
-            background: linear-gradient(135deg, #1A2238 0%, #2563eb 55%, #d4a373 100%);
+            background: linear-gradient(135deg, #112250 0%, #3B507D 55%, #BEB7A7 100%);
             padding: 42px 48px;
             border-radius: 24px;
             color: white;
             margin-bottom: 30px;
-            box-shadow: 0 15px 35px rgba(37, 99, 235, 0.18);
+            box-shadow: 0 15px 35px rgba(17, 34, 80, 0.22);
         ">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <span style="font-size: 32px;">✨</span>
-                <h2 style="color: #ffffff !important; font-size: 36px; font-weight: 800; margin: 0;">Smart Course Advisor</h2>
+                <h2 style="color: #F5F4F0 !important; font-size: 36px; font-weight: 800; margin: 0;">Smart Course Advisor</h2>
             </div>
-            <p style="color: #f1f5f9; font-size: 17px; line-height: 1.6; margin: 0; max-width: 800px; opacity: 0.95;">
+            <p style="color: #E7E2CE; font-size: 17px; line-height: 1.6; margin: 0; max-width: 800px; opacity: 0.95;">
                 Your intelligent academic assistant. Describe your goals or preferences, and let the multi-agent system analyze prerequisites, constraints, and custom requirements to guide your path.
             </p>
         </div>
@@ -789,7 +834,7 @@ if page == "🎓 Advisor":
         else:
             status_container = st.empty()
             with status_container.container():
-                data, latency, error, thread_id = call_advisor_stream(
+                data, latency, error, thread_id, usage = call_advisor_stream(
                     query.strip(),
                     status_container
                 )
@@ -801,9 +846,11 @@ if page == "🎓 Advisor":
 
             if error:
                 st.session_state.last_response = None
+                st.session_state.last_usage = None
                 st.error(error)
             else:
                 st.session_state.last_response = data
+                st.session_state.last_usage = usage
                 st.success(f"✨ Advisor response received successfully in {latency:.2f}s!")
 
     data = st.session_state.last_response
@@ -853,7 +900,7 @@ if page == "🎓 Advisor":
                 st.markdown(
                     f"""
                     <div class="course-card">
-                        <div class="course-code">OPTION #{index}</div>
+                        <div class="course-code">OPTION #{index} - {code}</div>
                         <div class="course-title">{title}</div>
                         <div class="confidence">✨ Match Confidence: {confidence:.0%}</div>
                     </div>
@@ -884,7 +931,7 @@ if page == "🎓 Advisor":
         markdown_report = build_markdown(st.session_state.last_query, data)
 
         st.download_button(
-            label="📄",
+            label="📄 download report md",
             data=markdown_report,
             file_name="course_advisor_result.md",
             mime="text/markdown",
@@ -949,8 +996,6 @@ elif page == "📊 Evaluation":
 
 
 # SECURITY PAGE
-
-
 elif page == "🛡️ Security":
     st.markdown("### 🛡️ Security")
     st.write("Test the advisor against poisoned course descriptions and prompt-injection attempts.")
@@ -975,13 +1020,18 @@ elif page == "🛡️ Security":
 
 
 # OBSERVABILITY PAGE
-
-
 elif page == "💰 Observability":
     st.markdown("### 💰 Cost & Observability")
     st.write("Monitor request latency, token usage, model cost, and system health.")
 
     st.subheader("Current Session")
+
+    usage = st.session_state.last_usage
+
+    input_tokens = usage.get("input_tokens", 0) if usage else 0
+    output_tokens = usage.get("output_tokens", 0) if usage else 0
+    total_tokens = usage.get("total_tokens", input_tokens + output_tokens) if usage else 0
+    estimated_cost = usage.get("estimated_cost_usd") if usage else None
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
@@ -989,12 +1039,24 @@ elif page == "💰 Observability":
     with c2:
         st.metric("Latency", f"{st.session_state.last_latency:.2f}s")
     with c3:
-        st.metric("Tokens", "—")
+        st.metric("Tokens", f"{total_tokens:,}" if usage else "—")
     with c4:
-        st.metric("Estimated Cost", "—")
+        st.metric(
+            "Estimated Cost",
+            f"${estimated_cost:.4f}" if estimated_cost is not None else "—",
+        )
 
     st.subheader("Observability")
-    st.info("Token usage and model cost will be populated when the backend exposes these metrics.")
+
+    if usage:
+        st.info(
+            f"**Input tokens:** {input_tokens:,}  \n"
+            f"**Output tokens:** {output_tokens:,}  \n"
+            f"**Model:** Cohere Command R+ (08-2024) — "
+            f"$2.50 / 1M input, $10.00 / 1M output."
+        )
+    else:
+        st.info("Token usage and model cost will be populated after you run a request on the Advisor page.")
 
     st.markdown(
         """

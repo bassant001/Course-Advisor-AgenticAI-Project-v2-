@@ -3,7 +3,7 @@ import sys
 import json
 import dotenv
 import cohere
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 from pydantic import ValidationError
 
 from src.agent.state import AgentState
@@ -80,6 +80,77 @@ def get_vector_index():
 
 
 
+# TOKEN USAGE TRACKING
+
+
+class TokenTracker:
+    """
+    Accumulates Cohere token usage across however many LLM calls happen
+    inside a single node (a node can call the LLM more than once, e.g.
+    the parser/recommender repair loops retry on validation failure —
+    every retry is a real, billed API call, so it should count).
+
+    Each node calls `reset()` once at the start, lets `call_llm_text` /
+    `call_llm_json` add to the tracker as they run, then reads `totals()`
+    right before returning its state update.
+    """
+
+    def __init__(self):
+        self.input_tokens = 0
+        self.output_tokens = 0
+
+    def reset(self):
+        self.input_tokens = 0
+        self.output_tokens = 0
+
+    def add(self, input_tokens: int = 0, output_tokens: int = 0):
+        self.input_tokens += input_tokens or 0
+        self.output_tokens += output_tokens or 0
+
+    def totals(self) -> Tuple[int, int]:
+        return self.input_tokens, self.output_tokens
+
+
+# Single global tracker. Nodes run sequentially (not concurrently) inside
+# one graph invocation, so a module-level instance reset at the top of
+# each node is safe and avoids threading every LLM helper's signature
+# through the whole call stack (repair loop, retry loops, etc.).
+_token_tracker = TokenTracker()
+
+
+def _extract_usage(response) -> Tuple[int, int]:
+    """
+    Best-effort extraction of billed token usage from a Cohere `chat()`
+    response. Cohere's SDK has moved this field around between versions
+    (`meta.billed_units` vs `meta.tokens`), so we probe both and fall
+    back to (0, 0) instead of raising if neither is present — a missing
+    usage field should never break a recommendation.
+    """
+
+    input_tokens = 0
+    output_tokens = 0
+
+    meta = getattr(response, "meta", None)
+
+    if meta is not None:
+
+        billed = getattr(meta, "billed_units", None)
+
+        if billed is not None:
+            input_tokens = getattr(billed, "input_tokens", 0) or 0
+            output_tokens = getattr(billed, "output_tokens", 0) or 0
+
+        else:
+            tokens = getattr(meta, "tokens", None)
+
+            if tokens is not None:
+                input_tokens = getattr(tokens, "input_tokens", 0) or 0
+                output_tokens = getattr(tokens, "output_tokens", 0) or 0
+
+    return input_tokens, output_tokens
+
+
+
 # LLM TEXT
 
 
@@ -89,6 +160,9 @@ def call_llm_text(prompt: str) -> str:
             model="command-r-plus-08-2024",
             message=prompt,
         )
+
+        input_tok, output_tok = _extract_usage(response)
+        _token_tracker.add(input_tok, output_tok)
 
         return response.text
 
@@ -109,6 +183,9 @@ def call_llm_json(prompt: str) -> Dict[str, Any]:
             response_format={"type": "json_object"}
         )
 
+        input_tok, output_tok = _extract_usage(response)
+        _token_tracker.add(input_tok, output_tok)
+
         print("✅ [Cohere] JSON response received.")
 
         return json.loads(response.text)
@@ -127,6 +204,8 @@ def parse_query_node(state: AgentState):
     print("\n" + "=" * 70)
     print("🤖 [Node] Parsing User Query...")
     print("=" * 70)
+
+    _token_tracker.reset()
 
     user_query = state["user_query"]
 
@@ -155,9 +234,13 @@ def parse_query_node(state: AgentState):
         print("✅ [Node] Query parsed successfully.")
         print(f"📋 [Node] Parsed filters: {parsed_schema}")
 
+        input_tok, output_tok = _token_tracker.totals()
+
         return {
             "parsed_filters": parsed_schema,
-            "parsing_failed": False
+            "parsing_failed": False,
+            "total_input_tokens": input_tok,
+            "total_output_tokens": output_tok,
         }
 
     except Exception as e:
@@ -409,6 +492,8 @@ def constraint_critic_node(state: AgentState):
     print("🧐 [Node] Critic evaluating constraints...")
     print("=" * 70)
 
+    _token_tracker.reset()
+
     retrieved_courses = state.get(
         "retrieved_courses",
         []
@@ -581,12 +666,16 @@ def constraint_critic_node(state: AgentState):
         f"{requires_human_review}"
     )
 
+    input_tok, output_tok = _token_tracker.totals()
+
     return {
         "violations": violations,
         "requires_human_review": (
             requires_human_review
         ),
-        "integrity_flags": integrity_flags
+        "integrity_flags": integrity_flags,
+        "total_input_tokens": input_tok,
+        "total_output_tokens": output_tok,
     }
 
 
@@ -601,6 +690,8 @@ def generate_recommendation_node(
     print("\n" + "=" * 70)
     print("💬 [Node] Generating Final Recommendation...")
     print("=" * 70)
+
+    _token_tracker.reset()
 
     retrieved_courses = state.get(
         "retrieved_courses",
@@ -632,8 +723,12 @@ def generate_recommendation_node(
             )
         )
 
+        input_tok, output_tok = _token_tracker.totals()
+
         return {
-            "final_advice": final_advice
+            "final_advice": final_advice,
+            "total_input_tokens": input_tok,
+            "total_output_tokens": output_tok,
         }
 
     safe_retrieved_courses = [
@@ -761,6 +856,10 @@ def generate_recommendation_node(
             )
         )
 
+    input_tok, output_tok = _token_tracker.totals()
+
     return {
-        "final_advice": final_advice
+        "final_advice": final_advice,
+        "total_input_tokens": input_tok,
+        "total_output_tokens": output_tok,
     }
